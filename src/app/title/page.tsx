@@ -1,15 +1,17 @@
 "use client";
 
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 
 import { Button } from "@/components/atomic";
 import {
 	DependencyOrderTitleDto,
 	PreviewTitleDto,
 	RelationRelevance,
+	SequentialOrderTitleDto,
 } from "@/dtos/title";
 import { faEye } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { useState } from "react";
 
 const PageContainer = styled.div`
 	align-items: center;
@@ -102,6 +104,56 @@ const DependencyTabPosterContainer = styled.div`
 	display: flex;
 	flex-direction: column;
 	gap: 0.5rem;
+`;
+
+const SequentialOrderBlock = styled.div`
+	align-items: center;
+	display: flex;
+	flex-direction: row;
+	gap: 8rem;
+	height: 30rem;
+	max-width: 150rem;
+`;
+
+const SequentialItem = styled.div`
+	align-items: center;
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+	height: 100%;
+	justify-content: center;
+
+	img {
+		max-height: 100%;
+		object-fit: contain;
+	}
+
+	h2 {
+		font-size: 2rem;
+		font-weight: bold;
+		opacity: 0.8;
+	}
+
+	h3 {
+		font-size: 1.5rem;
+		font-weight: normal;
+		opacity: 0.6;
+	}
+`;
+
+const SequentialAdjacent = styled(SequentialItem)<{ $alignRight?: boolean }>`
+	${({ $alignRight }) =>
+		$alignRight ?
+			css`
+				margin-left: auto;
+			`
+		:	css`
+				margin-right: auto;
+			`};
+
+	img {
+		max-height: 50%;
+	}
 `;
 
 const ButtonsList = styled.div`
@@ -208,16 +260,62 @@ const DependencyOrder: React.FC<DependencyOrderProps> = ({ title }) => {
 	);
 };
 
+interface SequentialOrderProps {
+	title: SequentialOrderTitleDto;
+}
+
+const SequentialOrder: React.FC<SequentialOrderProps> = ({ title }) => {
+	const { previous, next } = title;
+
+	return (
+		<SequentialOrderBlock>
+			<SequentialAdjacent $alignRight={true}>
+				{previous && (
+					<>
+						<h2>previous</h2>
+						<Poster src={previous.smallPosterUrl} alt={previous.name} />
+						<h3>{previous.releasedAtUtc?.getFullYear()}</h3>
+					</>
+				)}
+			</SequentialAdjacent>
+			<SequentialItem>
+				<LeadPoster src={title.largePosterUrl} alt={title.name} />
+			</SequentialItem>
+			<SequentialAdjacent $alignRight={false}>
+				{next && (
+					<>
+						<h2>next</h2>
+						<Poster src={next.smallPosterUrl} alt={next.name} />
+						<h3>{next.releasedAtUtc?.getFullYear()}</h3>
+					</>
+				)}
+			</SequentialAdjacent>
+		</SequentialOrderBlock>
+	);
+};
+
 export default function Title() {
-	const dummyTitle: DependencyOrderTitleDto = {
+	const [orderType, setOrderType] = useState<"sequential" | "relational">(
+		"relational",
+	);
+
+	const cycleOrderType = () => {
+		setOrderType(orderType === "sequential" ? "relational" : "sequential");
+	};
+
+	const dummyTitle: PreviewTitleDto = {
 		id: 0,
 		name: "The Avengers",
 		type: "movie",
-		largePosterUrl:
-			"https://image.tmdb.org/t/p/original/RYMX2wcKCBAr24UyPD7xwmjaTn.jpg",
 		smallPosterUrl:
 			"https://www.themoviedb.org/t/p/w600_and_h900_bestv2/RYMX2wcKCBAr24UyPD7xwmjaTn.jpg",
 		releasedAtUtc: new Date("2012-04-25"),
+	};
+
+	const dummyTitleDependency: DependencyOrderTitleDto = {
+		...dummyTitle,
+		largePosterUrl:
+			"https://image.tmdb.org/t/p/original/RYMX2wcKCBAr24UyPD7xwmjaTn.jpg",
 		description:
 			"When an unexpected enemy emerges and threatens global safety and security, Nick Fury, director of the international peacekeeping agency known as S.H.I.E.L.D., finds himself in need of a team to pull the world back from the brink of disaster. Spanning the globe, a daring recruitment effort begins!",
 		tmdbId: 24428,
@@ -270,16 +368,48 @@ export default function Title() {
 		order: "relational",
 	};
 
+	const dummyTitleSequential: SequentialOrderTitleDto = {
+		...dummyTitle,
+		largePosterUrl:
+			"https://image.tmdb.org/t/p/original/RYMX2wcKCBAr24UyPD7xwmjaTn.jpg",
+		description:
+			"When an unexpected enemy emerges and threatens global safety and security, Nick Fury, director of the international peacekeeping agency known as S.H.I.E.L.D., finds himself in need of a team to pull the world back from the brink of disaster. Spanning the globe, a daring recruitment effort begins!",
+		tmdbId: 24428,
+		order: "sequential",
+		orderId: 1,
+		previous: {
+			id: 4,
+			name: "Captain America: The First Avenger",
+			type: "movie",
+			smallPosterUrl:
+				"https://www.themoviedb.org/t/p/w600_and_h900_bestv2/vSNxAJTlD0r02V9sPYpOjqDZXUK.jpg",
+			releasedAtUtc: new Date("2011-07-22"),
+		},
+		next: {
+			id: 5,
+			name: "Iron Man 3",
+			type: "movie",
+			smallPosterUrl:
+				"https://www.themoviedb.org/t/p/w600_and_h900_bestv2/qhPtAc1TKbMPqNvcdXSOn9Bn7hZ.jpg",
+			releasedAtUtc: new Date("2013-04-18"),
+		},
+	};
+
 	return (
 		<PageContainer>
 			<TitleNameBlock>
-				<h1>{dummyTitle.name}</h1>
-				<h2>{dummyTitle.releasedAtUtc?.getFullYear()}</h2>
+				<h1>{dummyTitleDependency.name}</h1>
+				<h2>{dummyTitleDependency.releasedAtUtc?.getFullYear()}</h2>
+				<Button onClick={() => cycleOrderType()}>🔄️</Button>
+				{/* temporary ^^ */}
 			</TitleNameBlock>
-			<DependencyOrder title={dummyTitle} />
+			{orderType === "sequential" ?
+				<SequentialOrder title={dummyTitleSequential} />
+			:	<DependencyOrder title={dummyTitleDependency} />}
+
 			<DetailsBlock>
 				<Buttons />
-				<Description>{dummyTitle.description}</Description>
+				<Description>{dummyTitleDependency.description}</Description>
 			</DetailsBlock>
 		</PageContainer>
 	);
