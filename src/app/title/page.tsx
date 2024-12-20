@@ -3,6 +3,7 @@
 import styled, { css } from "styled-components";
 
 import { Button } from "@/components/atomic";
+import { useTitleContext } from "@/contexts";
 import {
 	DependencyOrderTitleDto,
 	PreviewTitleDto,
@@ -11,7 +12,7 @@ import {
 } from "@/dtos/title";
 import { faEye } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const PageContainer = styled.div`
 	align-items: center;
@@ -303,113 +304,44 @@ export default function Title() {
 		setOrderType(orderType === "sequential" ? "relational" : "sequential");
 	};
 
-	const dummyTitle: PreviewTitleDto = {
-		id: 0,
-		name: "The Avengers",
-		type: "movie",
-		smallPosterUrl:
-			"https://www.themoviedb.org/t/p/w600_and_h900_bestv2/RYMX2wcKCBAr24UyPD7xwmjaTn.jpg",
-		releasedAtUtc: new Date("2012-04-25"),
-	};
+	const { title, setTitle, getRelations, getSequences } = useTitleContext();
+	const [sequentialTitle, setSequentialTitle] =
+		useState<SequentialOrderTitleDto | null>(null);
+	const [relationalTitle, setRelationalTitle] =
+		useState<DependencyOrderTitleDto | null>(null);
 
-	const dummyTitleDependency: DependencyOrderTitleDto = {
-		...dummyTitle,
-		largePosterUrl:
-			"https://image.tmdb.org/t/p/original/RYMX2wcKCBAr24UyPD7xwmjaTn.jpg",
-		description:
-			"When an unexpected enemy emerges and threatens global safety and security, Nick Fury, director of the international peacekeeping agency known as S.H.I.E.L.D., finds himself in need of a team to pull the world back from the brink of disaster. Spanning the globe, a daring recruitment effort begins!",
-		tmdbId: 24428,
-		relations: [
-			{
-				title: {
-					id: 1,
-					name: "The Incredible Hulk",
-					type: "movie",
-					smallPosterUrl:
-						"https://www.themoviedb.org/t/p/w600_and_h900_bestv2/gKzYx79y0AQTL4UAk1cBQJ3nvrm.jpg",
-					releasedAtUtc: new Date("2008-06-12"),
-				},
-				relevance: "could",
-			},
-			{
-				title: {
-					id: 2,
-					name: "Iron Man 2",
-					type: "movie",
-					smallPosterUrl:
-						"https://www.themoviedb.org/t/p/w600_and_h900_bestv2/6WBeq4fCfn7AN0o21W9qNcRF2l9.jpg",
-					releasedAtUtc: new Date("2010-05-07"),
-				},
-				relevance: "should",
-			},
-			{
-				title: {
-					id: 3,
-					name: "Thor",
-					type: "movie",
-					smallPosterUrl:
-						"https://www.themoviedb.org/t/p/w600_and_h900_bestv2/prSfAi1xGrhLQNxVSUFh61xQ4Qy.jpg",
-					releasedAtUtc: new Date("2011-05-06"),
-				},
-				relevance: "should",
-			},
-			{
-				title: {
-					id: 4,
-					name: "Captain America: The First Avenger",
-					type: "movie",
-					smallPosterUrl:
-						"https://www.themoviedb.org/t/p/w600_and_h900_bestv2/vSNxAJTlD0r02V9sPYpOjqDZXUK.jpg",
-					releasedAtUtc: new Date("2011-07-22"),
-				},
-				relevance: "should",
-			},
-		],
-		order: "relational",
-	};
+	useEffect(() => {
+		setTitle(1);
+	}, [setTitle]);
 
-	const dummyTitleSequential: SequentialOrderTitleDto = {
-		...dummyTitle,
-		largePosterUrl:
-			"https://image.tmdb.org/t/p/original/RYMX2wcKCBAr24UyPD7xwmjaTn.jpg",
-		description:
-			"When an unexpected enemy emerges and threatens global safety and security, Nick Fury, director of the international peacekeeping agency known as S.H.I.E.L.D., finds himself in need of a team to pull the world back from the brink of disaster. Spanning the globe, a daring recruitment effort begins!",
-		tmdbId: 24428,
-		order: "sequential",
-		orderId: 1,
-		previous: {
-			id: 4,
-			name: "Captain America: The First Avenger",
-			type: "movie",
-			smallPosterUrl:
-				"https://www.themoviedb.org/t/p/w600_and_h900_bestv2/vSNxAJTlD0r02V9sPYpOjqDZXUK.jpg",
-			releasedAtUtc: new Date("2011-07-22"),
-		},
-		next: {
-			id: 5,
-			name: "Iron Man 3",
-			type: "movie",
-			smallPosterUrl:
-				"https://www.themoviedb.org/t/p/w600_and_h900_bestv2/qhPtAc1TKbMPqNvcdXSOn9Bn7hZ.jpg",
-			releasedAtUtc: new Date("2013-04-18"),
-		},
-	};
+	useEffect(() => {
+		if (orderType === "sequential") {
+			getSequences().then(setSequentialTitle);
+			// pass an orderId into getSequences for a specific order, otherwise it defaults to -1 (release order)
+		} else if (orderType === "relational") {
+			getRelations().then(setRelationalTitle);
+		}
+	}, [orderType, getSequences, getRelations]);
 
 	return (
 		<PageContainer>
 			<TitleNameBlock>
-				<h1>{dummyTitleDependency.name}</h1>
-				<h2>{dummyTitleDependency.releasedAtUtc?.getFullYear()}</h2>
+				<h1>{title.name}</h1>
+				<h2>{title.releasedAtUtc?.getFullYear()}</h2>
 				<Button onClick={() => cycleOrderType()}>🔄️</Button>
 				{/* temporary ^^ */}
 			</TitleNameBlock>
 			{orderType === "sequential" ?
-				<SequentialOrder title={dummyTitleSequential} />
-			:	<DependencyOrder title={dummyTitleDependency} />}
+				sequentialTitle ?
+					<SequentialOrder title={sequentialTitle} />
+				:	null
+			: relationalTitle ?
+				<DependencyOrder title={relationalTitle} />
+			:	null}
 
 			<DetailsBlock>
 				<Buttons />
-				<Description>{dummyTitleDependency.description}</Description>
+				<Description>{title.description}</Description>
 			</DetailsBlock>
 		</PageContainer>
 	);

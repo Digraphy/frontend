@@ -16,15 +16,20 @@ export interface CommonTitleDto extends PreviewTitleDto {
 
 export interface DependencyOrderTitleDto extends CommonTitleDto {
 	order: "relational";
-	relations: {
-		title: PreviewTitleDto;
-		relevance: RelationRelevance;
-	}[];
+	relations: Relation[];
 }
 
-export interface SequentialOrderTitleDto extends CommonTitleDto {
+export interface SequentialOrderTitleDto extends CommonTitleDto, Sequence {
 	order: "sequential";
 	orderId: number;
+}
+
+export interface Relation {
+	title: PreviewTitleDto;
+	relevance: RelationRelevance;
+}
+
+export interface Sequence {
 	previous?: PreviewTitleDto;
 	next?: PreviewTitleDto;
 }
