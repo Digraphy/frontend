@@ -11,7 +11,7 @@ import {
 } from "@/dtos";
 import { createContext, useCallback, useContext, useState } from "react";
 
-const dummyTitle: CommonTitleDto = {
+export const dummyTitle: CommonTitleDto = {
 	id: 0,
 	name: "The Avengers",
 	type: "movie",
@@ -25,7 +25,7 @@ const dummyTitle: CommonTitleDto = {
 	tmdbId: 24428,
 };
 
-const dummyFilms: { [id: number]: PreviewTitleDto } = {
+export const dummyFilms: { [id: number]: PreviewTitleDto } = {
 	1: {
 		id: 1,
 		name: "The Incredible Hulk",
