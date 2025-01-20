@@ -1,9 +1,8 @@
 "use client";
 
 import { MiniPoster } from "@/components/title-page-components";
-import { dummyFilms } from "@/contexts/TitleContext";
 import { FactoidDto, PreviewTitleDto } from "@/dtos";
-import { dummyFactoids } from "@/dtos/factoid";
+import { dummyFactoids, dummyPreviewTitles } from "@/util/dummyData";
 import styled from "styled-components";
 
 const PageContainer = styled.div`
@@ -80,8 +79,8 @@ const Card: React.FC<CardProps> = ({ title, factoids }) => {
 };
 
 export default function Summary() {
-	const requiredFilm = dummyFilms[1];
-	const selectedFilm = dummyFilms[2];
+	const requiredFilm = dummyPreviewTitles[1];
+	const selectedFilm = dummyPreviewTitles[2];
 
 	return (
 		<PageContainer>
@@ -97,14 +96,14 @@ export default function Summary() {
 			</HeaderBox>
 			<CardContainer>
 				<Card
-					title={dummyFilms[1]}
+					title={dummyPreviewTitles[1]}
 					factoids={[dummyFactoids[1], dummyFactoids[2]]}
 				/>
 				<Card
-					title={dummyFilms[2]}
+					title={dummyPreviewTitles[2]}
 					factoids={[dummyFactoids[1], dummyFactoids[3]]}
 				/>
-				<Card title={dummyFilms[3]} factoids={[dummyFactoids[1]]} />
+				<Card title={dummyPreviewTitles[3]} factoids={[dummyFactoids[1]]} />
 			</CardContainer>
 		</PageContainer>
 	);
