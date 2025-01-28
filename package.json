@@ -1,15 +1,16 @@
 {
-	"name": "@digraphy/frontend",
+	"name": "@superfluous/frontend",
 	"version": "0.1.0",
 	"private": true,
 	"contributors": [
+		"Alex Hope",
 		"Josh Jeffers (https://pumbas.net)",
 		"Rivah Somerville",
 		"Samuel Ou"
 	],
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/Digraphy/frontend.git"
+		"url": "https://github.com/SuperfluousNZ/frontend.git"
 	},
 	"scripts": {
 		"dev": "next dev",
