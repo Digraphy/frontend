@@ -3,102 +3,32 @@
 import {
 	CommonTitleDto,
 	DependencyOrderTitleDto,
-	PreviewTitleDto,
+	FactoidDto,
 	Relation,
 	Sequence,
 	SequentialOrderTitleDto,
 	TitleDto,
 } from "@/dtos";
+import {
+	dummyCommonTitles,
+	dummyFactoids,
+	dummyRelations,
+	dummySequences,
+} from "@/util/dummyData";
 import { createContext, useCallback, useContext, useState } from "react";
-
-const dummyTitle: CommonTitleDto = {
-	id: 0,
-	name: "The Avengers",
-	type: "movie",
-	smallPosterUrl:
-		"https://www.themoviedb.org/t/p/w600_and_h900_bestv2/RYMX2wcKCBAr24UyPD7xwmjaTn.jpg",
-	releasedAtUtc: new Date("2012-04-25"),
-	largePosterUrl:
-		"https://image.tmdb.org/t/p/original/RYMX2wcKCBAr24UyPD7xwmjaTn.jpg",
-	description:
-		"When an unexpected enemy emerges and threatens global safety and security, Nick Fury, director of the international peacekeeping agency known as S.H.I.E.L.D., finds himself in need of a team to pull the world back from the brink of disaster. Spanning the globe, a daring recruitment effort begins!",
-	tmdbId: 24428,
-};
-
-const dummyFilms: { [id: number]: PreviewTitleDto } = {
-	1: {
-		id: 1,
-		name: "The Incredible Hulk",
-		type: "movie",
-		smallPosterUrl:
-			"https://www.themoviedb.org/t/p/w600_and_h900_bestv2/gKzYx79y0AQTL4UAk1cBQJ3nvrm.jpg",
-		releasedAtUtc: new Date("2008-06-12"),
-	},
-	2: {
-		id: 2,
-		name: "Iron Man 2",
-		type: "movie",
-		smallPosterUrl:
-			"https://www.themoviedb.org/t/p/w600_and_h900_bestv2/6WBeq4fCfn7AN0o21W9qNcRF2l9.jpg",
-		releasedAtUtc: new Date("2010-05-07"),
-	},
-	3: {
-		id: 3,
-		name: "Thor",
-		type: "movie",
-		smallPosterUrl:
-			"https://www.themoviedb.org/t/p/w600_and_h900_bestv2/prSfAi1xGrhLQNxVSUFh61xQ4Qy.jpg",
-		releasedAtUtc: new Date("2011-05-06"),
-	},
-	4: {
-		id: 4,
-		name: "Captain America: The First Avenger",
-		type: "movie",
-		smallPosterUrl:
-			"https://www.themoviedb.org/t/p/w600_and_h900_bestv2/vSNxAJTlD0r02V9sPYpOjqDZXUK.jpg",
-		releasedAtUtc: new Date("2011-07-22"),
-	},
-	5: {
-		id: 5,
-		name: "Iron Man 3",
-		type: "movie",
-		smallPosterUrl:
-			"https://www.themoviedb.org/t/p/w600_and_h900_bestv2/qhPtAc1TKbMPqNvcdXSOn9Bn7hZ.jpg",
-		releasedAtUtc: new Date("2013-04-18"),
-	},
-};
-
-const dummyRelations: Relation[] = [
-	{
-		title: dummyFilms[1],
-		relevance: "could",
-	},
-	{
-		title: dummyFilms[2],
-		relevance: "should",
-	},
-	{
-		title: dummyFilms[3],
-		relevance: "should",
-	},
-	{
-		title: dummyFilms[4],
-		relevance: "should",
-	},
-];
-
-const dummySequences: Record<number, Sequence> = {
-	[-1]: {
-		previous: dummyFilms[4],
-		next: dummyFilms[5],
-	},
-};
 
 interface TitleContextType {
 	title: CommonTitleDto;
 	setTitle: (titleId: TitleDto["id"]) => void;
-	getRelations: () => Promise<DependencyOrderTitleDto>;
-	getSequences: (orderId?: number) => Promise<SequentialOrderTitleDto>;
+	getFactoids: (
+		titleId?: TitleDto["id"],
+	) => Promise<Record<number, FactoidDto[]>>;
+	getRelations: (titleId?: TitleDto["id"]) => Promise<DependencyOrderTitleDto>;
+	getSequences: (
+		orderId?: number,
+		titleId?: TitleDto["id"],
+	) => Promise<SequentialOrderTitleDto>;
+	getTitleById: (titleId: TitleDto["id"]) => Promise<CommonTitleDto>;
 }
 
 const placeholderTitle: CommonTitleDto = {
@@ -110,6 +40,7 @@ const placeholderTitle: CommonTitleDto = {
 export const TitleContext = createContext<TitleContextType>({
 	title: placeholderTitle,
 	setTitle: () => {},
+	getFactoids: async () => ({}),
 	getRelations: async () => ({
 		...placeholderTitle,
 		order: "relational",
@@ -122,6 +53,7 @@ export const TitleContext = createContext<TitleContextType>({
 		previous: undefined,
 		next: undefined,
 	}),
+	getTitleById: async () => placeholderTitle,
 });
 
 export const TitleProvider = ({ children }: { children: React.ReactNode }) => {
@@ -130,57 +62,95 @@ export const TitleProvider = ({ children }: { children: React.ReactNode }) => {
 	const [relations, setRelations] = useState<Relation[] | null>(null);
 	// An orderId of -1 is reserved for the release order
 	const [sequences, setSequences] = useState<Record<number, Sequence>>({});
+	const [factoids, setFactoids] = useState<Record<number, FactoidDto[]>>([]);
 
 	const setTitleById = useCallback<TitleContextType["setTitle"]>(
 		// biome-ignore lint/correctness/noUnusedVariables: TODO: implement
 		async (titleId: TitleDto["id"]) => {
 			// const response = await fetch(`/api/...`);
 			// const title = (await response.json()) as CommonTitleDto;
-			const title = dummyTitle;
+			const title = dummyCommonTitles[5];
 			setTitle(title);
 		},
 		[],
 	);
 
-	const getRelations = useCallback<
-		TitleContextType["getRelations"]
-	>(async () => {
-		if (relations === null) {
-			setRelations(null);
-			setSequences({});
-
+	const getTitleById = useCallback<TitleContextType["getTitleById"]>(
+		async (titleId: TitleDto["id"]) => {
 			// const response = await fetch(`/api/...`);
-			// const fetchedRelations = (await response.json()) as Relevance[];
-			const fetchedRelations = dummyRelations; // placeholder
-			setRelations(fetchedRelations);
-		}
-		return {
-			...title,
-			order: "relational",
-			relations: relations ?? [],
-		};
-	}, [title, relations]);
+			// const title = (await response.json()) as CommonTitleDto;
+
+			const fetchedTitle = dummyCommonTitles[titleId];
+
+			console.log(fetchedTitle);
+
+			return fetchedTitle;
+		},
+		[],
+	);
+
+	const getRelations = useCallback<TitleContextType["getRelations"]>(
+		async (titleId?: TitleDto["id"]) => {
+			if (titleId && titleId !== title.id) {
+				const fetchedRelations = dummyRelations[titleId];
+				return { ...title, order: "relational", relations: fetchedRelations };
+			}
+
+			if (relations === null) {
+				const fetchedRelations = dummyRelations[5];
+				setRelations(fetchedRelations);
+				setSequences({});
+				return { ...title, order: "relational", relations: fetchedRelations };
+			}
+
+			return { ...title, order: "relational", relations: relations ?? [] };
+		},
+		[title, relations],
+	);
 
 	const getSequences = useCallback<TitleContextType["getSequences"]>(
-		async (orderId = -1) => {
-			if (!sequences[orderId]) {
-				// const response = await fetch(`/api/...`);
-				// const fetchedSequences = (await response.json()) as Sequence;
-				const fetchedSequences = dummySequences[-1]; // placeholder
-				setSequences((prevSequences) => ({
-					...prevSequences,
-					[orderId]: fetchedSequences,
-				}));
+		async (orderId = -1, titleId?: TitleDto["id"]) => {
+			let fetchedSequences = sequences[orderId];
+			if (titleId && titleId !== title.id) {
+				fetchedSequences = dummySequences[titleId][orderId];
+			} else if (!fetchedSequences) {
+				if (!sequences[orderId]) {
+					fetchedSequences = dummySequences[5][orderId];
+					setSequences((prev) => ({ ...prev, [orderId]: fetchedSequences }));
+				} else {
+					fetchedSequences = sequences[orderId];
+				}
 			}
 			return {
 				...title,
 				order: "sequential",
 				orderId,
-				previous: sequences[orderId]?.previous,
-				next: sequences[orderId]?.next,
+				previous: fetchedSequences?.previous,
+				next: fetchedSequences?.next,
 			};
 		},
 		[title, sequences],
+	);
+
+	const getFactoids = useCallback<TitleContextType["getFactoids"]>(
+		async (titleId?: TitleDto["id"]) => {
+			let fetchedFactoids = factoids;
+			if (titleId && titleId !== title.id) {
+				// const response = await fetch(`/api/...`);
+				// const factoids = (await response.json()) as FactoidDto[];
+				fetchedFactoids = { 4: [dummyFactoids[1], dummyFactoids[2]] };
+			}
+
+			if (!fetchedFactoids) {
+				// const response = await fetch(`/api/...`);
+				// const factoids = (await response.json()) as FactoidDto[];
+				const fetchedFactoids = { 4: [dummyFactoids[1], dummyFactoids[2]] };
+				setFactoids(fetchedFactoids);
+			}
+
+			return fetchedFactoids;
+		},
+		[title, factoids],
 	);
 
 	return (
@@ -188,8 +158,10 @@ export const TitleProvider = ({ children }: { children: React.ReactNode }) => {
 			value={{
 				title,
 				setTitle: setTitleById,
+				getFactoids,
 				getRelations,
 				getSequences,
+				getTitleById,
 			}}
 		>
 			{children}
